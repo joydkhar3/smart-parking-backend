@@ -6,27 +6,17 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [
-      "https://smartpark-a9dac.web.app",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:5000",
-      "http://127.0.0.1:5000",
-    ],
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
+// Keep CORS simple for Flutter Web
+app.use(cors());
 app.use(express.json());
 
+// Request log
 app.use((req, res, next) => {
   console.log("Incoming request:", req.method, req.url);
   next();
 });
 
+// Env check logs
 console.log(
   "RAZORPAY_KEY_ID:",
   process.env.RAZORPAY_KEY_ID ? "Loaded" : "Missing"
@@ -42,10 +32,12 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Root route
 app.get("/", (req, res) => {
   res.status(200).send("Smart Parking Razorpay Backend Running");
 });
 
+// Create Razorpay order
 app.post("/create-order", async (req, res) => {
   try {
     console.log("Incoming request body:", req.body);
@@ -89,6 +81,7 @@ app.post("/create-order", async (req, res) => {
     console.error("Message:", error?.message);
     console.error("Description:", error?.error?.description);
     console.error("Code:", error?.error?.code);
+    console.error("Error object:", error?.error);
 
     return res.status(500).json({
       success: false,
@@ -99,6 +92,7 @@ app.post("/create-order", async (req, res) => {
   }
 });
 
+// Verify payment signature
 app.post("/verify-payment", (req, res) => {
   try {
     const {
