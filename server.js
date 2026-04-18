@@ -65,7 +65,7 @@ app.post("/create-order", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      key: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
@@ -97,7 +97,7 @@ app.post("/verify-payment", (req, res) => {
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({
-        verified: false,
+        success: false,
         error: "Missing fields",
       });
     }
@@ -111,18 +111,18 @@ app.post("/verify-payment", (req, res) => {
 
     if (expectedSignature === razorpay_signature) {
       console.log("Payment verified");
-      return res.status(200).json({ verified: true });
+      return res.status(200).json({ success: true });
     }
 
     return res.status(400).json({
-      verified: false,
+      success: false,
       error: "Invalid signature",
     });
   } catch (error) {
     console.error("Verify error:", error);
 
     return res.status(500).json({
-      verified: false,
+      success: false,
       error: error.message,
     });
   }
