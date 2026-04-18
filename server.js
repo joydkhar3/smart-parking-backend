@@ -20,8 +20,6 @@ app.use(
   })
 );
 
-app.options("*", cors());
-
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -91,7 +89,6 @@ app.post("/create-order", async (req, res) => {
     console.error("Message:", error?.message);
     console.error("Description:", error?.error?.description);
     console.error("Code:", error?.error?.code);
-    console.error("Error object:", error?.error);
 
     return res.status(500).json({
       success: false,
