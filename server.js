@@ -6,7 +6,22 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://smartpark-a9dac.web.app",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:5000",
+      "http://127.0.0.1:5000",
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.options("*", cors());
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -30,7 +45,7 @@ const razorpay = new Razorpay({
 });
 
 app.get("/", (req, res) => {
-  res.send("Smart Parking Razorpay Backend Running");
+  res.status(200).send("Smart Parking Razorpay Backend Running");
 });
 
 app.post("/create-order", async (req, res) => {
