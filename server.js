@@ -1,8 +1,11 @@
+require("dotenv").config();
+
+console.log("Using Key:", process.env.RAZORPAY_KEY_ID);
+
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
-require("dotenv").config();
 
 const app = express();
 
