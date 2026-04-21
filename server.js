@@ -25,7 +25,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow server-to-server tools / curl / postman with no origin
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -87,8 +86,17 @@ app.post("/create-order", async (req, res) => {
       });
     }
 
+    const numericAmount = Number(amount);
+
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "amount must be a valid number greater than 0",
+      });
+    }
+
     const options = {
-      amount: Number(amount) * 100,
+      amount: Math.round(numericAmount * 100),
       currency: "INR",
       receipt: `booking_${bookingId}`,
       notes: {
@@ -102,7 +110,7 @@ app.post("/create-order", async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      key: process.env.RAZORPAY_KEY_ID, // keep this for web/mobile code
+      key: process.env.RAZORPAY_KEY_ID,
       keyId: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
@@ -121,11 +129,8 @@ app.post("/create-order", async (req, res) => {
 
 app.post("/verify-payment", (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({
@@ -164,6 +169,77 @@ app.post("/verify-payment", (req, res) => {
   }
 });
 
+// LIVE REFUND ROUTE
+app.post("/create-refund", async (req, res) => {
+  try {
+    console.log("Refund request body:", req.body);
+
+    const {
+      paymentId,
+      refundAmount,
+      refundReason,
+      bookingId,
+      slotId,
+      userId,
+    } = req.body;
+
+    if (!paymentId || !refundAmount || !bookingId) {
+      return res.status(400).json({
+        success: false,
+        error: "paymentId, refundAmount and bookingId are required",
+      });
+    }
+
+    const numericRefundAmount = Number(refundAmount);
+
+    if (!Number.isFinite(numericRefundAmount) || numericRefundAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "refundAmount must be a valid number greater than 0",
+      });
+    }
+
+    const refundPayload = {
+      amount: Math.round(numericRefundAmount * 100), // convert to paise
+      speed: "normal",
+      notes: {
+        bookingId: bookingId || "",
+        slotId: slotId || "",
+        userId: userId || "",
+        reason: refundReason || "",
+      },
+    };
+
+    console.log("Creating Razorpay refund with:", {
+      paymentId,
+      ...refundPayload,
+    });
+
+    const refund = await razorpay.payments.refund(paymentId, refundPayload);
+
+    return res.status(200).json({
+      success: true,
+      refundId: refund.id,
+      paymentId: refund.payment_id,
+      amount: refund.amount, // paise
+      amountInRupees: refund.amount / 100,
+      status: refund.status,
+      speedProcessed: refund.speed_processed ?? null,
+      receipt: refund.receipt ?? null,
+    });
+  } catch (error) {
+    console.error("Refund error FULL:", error);
+    return res.status(500).json({
+      success: false,
+      error:
+        error?.error?.description ||
+        error?.message ||
+        "Refund failed",
+      code: error?.error?.code || null,
+    });
+  }
+});
+
 // Helpful browser test route
 app.get("/test-order", async (req, res) => {
   try {
@@ -186,6 +262,14 @@ app.get("/test-order", async (req, res) => {
       error: error?.message || "Test order failed",
     });
   }
+});
+
+// Optional test route for refund API health check only
+app.get("/refund-health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Refund route is ready",
+  });
 });
 
 const PORT = process.env.PORT || 5000;
