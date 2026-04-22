@@ -16,8 +16,10 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5500",
   "http://localhost:58643",
+  "http://localhost:56254",
   "http://127.0.0.1:5500",
   "http://127.0.0.1:58643",
+  "http://127.0.0.1:56254",
   "https://smartpark-a9dac.web.app",
   "https://smartpark-a9dac.firebaseapp.com",
 ];
